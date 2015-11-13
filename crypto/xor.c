@@ -84,11 +84,13 @@ do_xor_speed(struct xor_block_template *tmpl, void *b1, void *b2)
 		while ((now = jiffies) == j)
 			cpu_relax();
 		while (time_before(jiffies, now + 1)) {
+			cpu_relax();
 			mb(); /* prevent loop optimzation */
 			tmpl->do_2(BENCH_SIZE, b1, b2);
 			mb();
 			count++;
 			mb();
+			cpu_relax();
 		}
 		if (count > max)
 			max = count;

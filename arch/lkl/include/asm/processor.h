@@ -3,7 +3,14 @@
 
 struct task_struct;
 
-#define cpu_relax() barrier()
+static inline void cpu_relax(void)
+{
+	unsigned long flags;
+
+	/* give interrupts a chance to run */
+	local_irq_save(flags);
+	local_irq_restore(flags);
+}
 
 #define current_text_addr() ({ __label__ _l; _l: &&_l; })
 

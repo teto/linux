@@ -149,6 +149,7 @@ static inline const struct raid6_calls *raid6_choose_gen(
 				cpu_relax();
 			while (time_before(jiffies,
 					    j1 + (1<<RAID6_TIME_JIFFIES_LG2))) {
+				cpu_relax();
 				(*algo)->gen_syndrome(disks, PAGE_SIZE, *dptrs);
 				perf++;
 			}
@@ -172,6 +173,7 @@ static inline const struct raid6_calls *raid6_choose_gen(
 				cpu_relax();
 			while (time_before(jiffies,
 					    j1 + (1<<RAID6_TIME_JIFFIES_LG2))) {
+				cpu_relax();
 				(*algo)->xor_syndrome(disks, start, stop,
 						      PAGE_SIZE, *dptrs);
 				perf++;
