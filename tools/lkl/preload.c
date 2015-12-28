@@ -462,7 +462,8 @@ typedef long (*host_call)(long p1, long p2, long p3, long p4, long p5, long p6);
 static host_call host_calls[__lkl__NR_syscalls];
 
 #define HOOK_FD_CALL(name)						\
-	static void __attribute__((constructor)) init_host_##name(void)	\
+	static void __attribute__((constructor(101)))			\
+	init_host_##name(void)						\
 	{								\
 		host_calls[__lkl__NR_##name] = resolve_sym(#name);	\
 	}								\
@@ -485,7 +486,8 @@ static host_call host_calls[__lkl__NR_syscalls];
 
 #define HOST_CALL(name)							\
 	static long (*host_##name)();					\
-	static void __attribute__((constructor)) init2_host_##name(void) \
+	static void __attribute__((constructor(101)))			\
+	init2_host_##name(void)						\
 	{								\
 		host_##name = resolve_sym(#name);			\
 	}
@@ -871,7 +873,7 @@ int epoll_ctl(int epollfd, int op, int fd, struct epoll_event *event)
 	return lkl_call(__lkl__NR_epoll_ctl, 3, op, fd, event);
 }
 
-static void __attribute__((constructor)) init(void)
+static void __attribute__((constructor(102))) init(void)
 {
 	long dev_null;
 	int ret, i;
