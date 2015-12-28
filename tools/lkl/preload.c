@@ -571,8 +571,10 @@ static int soname_xlate(int soname)
 		return LKL_SO_LINGER;
 	case SO_BSDCOMPAT:
 		return LKL_SO_BSDCOMPAT;
+#ifdef SO_REUSEPORT
 	case SO_REUSEPORT:
 		return LKL_SO_REUSEPORT;
+#endif
 	case SO_PASSCRED:
 		return LKL_SO_PASSCRED;
 	case SO_PEERCRED:
@@ -619,20 +621,34 @@ static int soname_xlate(int soname)
 		return LKL_SO_DOMAIN;
 	case SO_RXQ_OVFL:
 		return LKL_SO_RXQ_OVFL;
+#ifdef SO_WIFI_STATUS
 	case SO_WIFI_STATUS:
 		return LKL_SO_WIFI_STATUS;
+#endif
+#ifdef SO_PEEK_OFF
 	case SO_PEEK_OFF:
 		return LKL_SO_PEEK_OFF;
+#endif
+#ifdef SO_NOFCS
 	case SO_NOFCS:
 		return LKL_SO_NOFCS;
+#endif
+#ifdef SO_LOCK_FILTER
 	case SO_LOCK_FILTER:
 		return LKL_SO_LOCK_FILTER;
+#endif
+#ifdef SO_SELECT_ERR_QUEUE
 	case SO_SELECT_ERR_QUEUE:
 		return LKL_SO_SELECT_ERR_QUEUE;
+#endif
+#ifdef SO_BUSY_POLL
 	case SO_BUSY_POLL:
 		return LKL_SO_BUSY_POLL;
+#endif
+#ifdef SO_MAX_PACING_RATE
 	case SO_MAX_PACING_RATE:
 		return LKL_SO_MAX_PACING_RATE;
+#endif
 	}
 
 	return soname;
