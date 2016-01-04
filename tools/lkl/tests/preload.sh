@@ -4,6 +4,10 @@ script_dir=$(cd $(dirname ${BASH_SOURCE:-$0}); pwd)
 script=lkl-preload.sh
 export PATH=${script_dir}/../bin/:${PATH}
 
+if ! [ -e ${script_dir}/../lib/liblkl_preload.so ]; then
+    exit;
+fi
+
 echo "== ip addr test=="
 ${script} ip addr
 echo "== ip route test=="

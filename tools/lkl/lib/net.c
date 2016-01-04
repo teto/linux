@@ -1,6 +1,8 @@
 #include <string.h>
-#include <lkl_host.h>
 #include "endian.h"
+#undef s_addr
+#include <lkl_host.h>
+
 
 static inline void set_sockaddr(struct lkl_sockaddr_in *sin, unsigned int addr,
 				unsigned short port)
