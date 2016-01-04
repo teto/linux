@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #define __USE_GNU
 #include <sys/socket.h>
@@ -25,6 +26,10 @@
 #include <sys/ioctl.h>
 #include <dlfcn.h>
 #include <assert.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <net/if.h>
+#include <linux/if_tun.h>
 #undef st_atime
 #undef st_mtime
 #undef st_ctime
@@ -876,15 +881,54 @@ int epoll_ctl(int epollfd, int op, int fd, struct epoll_event *event)
 static void __attribute__((constructor(102))) init(void)
 {
 	long dev_null;
-	int ret, i;
+	int ret, i, nd_id = -1, nd_ifindex = -1;
+	char *tap = getenv("LKL_PRELOAD_NET_TAP");
+	char *ip = getenv("LKL_PRELOAD_NET_IP");
+	char *netmask_len = getenv("LKL_PRELOAD_NET_NETMASK_LEN");
+	char *gateway = getenv("LKL_PRELOAD_NET_GATEWAY");
+	char *debug = getenv("LKL_PRELOAD_DEBUG");
+
+	if (tap) {
+		struct ifreq ifr = {
+			.ifr_flags = IFF_TAP | IFF_NO_PI,
+		};
+		union lkl_netdev nd;
+
+		strncpy(ifr.ifr_name, tap, IFNAMSIZ);
+
+		nd.fd = open("/dev/net/tun", O_RDWR|O_NONBLOCK);
+		if (nd.fd < 0) {
+			fprintf(stderr, "failed to open tap: %s\n", strerror(errno));
+			goto no_tap;
+		}
+
+		ret = ioctl(nd.fd, TUNSETIFF, &ifr);
+		if (ret < 0) {
+			fprintf(stderr, "failed to attach to %s: %s\n",
+				ifr.ifr_name, strerror(errno));
+			goto no_tap;
+		}
+
+		ret = lkl_netdev_add(nd, NULL);
+		if (ret < 0) {
+			fprintf(stderr, "failed to add netdev: %s\n",
+				lkl_strerror(ret));
+			goto no_tap;
+		}
+
+		nd_id = ret;
+	}
+
+no_tap:
+
+	if (!debug)
+		lkl_host_ops.print = NULL;
 
 	ret = lkl_start_kernel(&lkl_host_ops, 64 * 1024 * 1024, "");
 	if (ret) {
 		fprintf(stderr, "can't start kernel: %s\n", lkl_strerror(ret));
 		return;
 	}
-
-	lkl_if_up(1);
 
 	/* fillup FDs up to LKL_FD_OFFSET */
 	ret = lkl_sys_mknod("/dev_null", LKL_S_IFCHR | 0600, LKL_MKDEV(1, 3));
@@ -896,6 +940,40 @@ static void __attribute__((constructor(102))) init(void)
 
 	for (i = 1; i < LKL_FD_OFFSET; i++)
 		lkl_sys_dup(dev_null);
+
+	lkl_if_up(1);
+
+	if (nd_id >= 0) {
+		nd_ifindex = lkl_netdev_get_ifindex(nd_id);
+		if (nd_ifindex > 0)
+			lkl_if_up(nd_ifindex);
+		else
+			fprintf(stderr, "failed to get ifindex for netdev id %d: %s\n",
+				nd_id, lkl_strerror(nd_ifindex));
+	}
+
+	if (nd_ifindex >= 0 && ip && netmask_len) {
+		unsigned int addr = inet_addr(ip);
+		int nmlen = atoi(netmask_len);
+
+		if (addr != INADDR_NONE && nmlen > 0 && nmlen < 32) {
+			ret = lkl_if_set_ipv4(nd_ifindex, addr, nmlen);
+			if (ret < 0)
+				fprintf(stderr, "failed to set IPv4 address: %s\n",
+					lkl_strerror(ret));
+		}
+	}
+
+	if (nd_ifindex >= 0 && gateway) {
+		unsigned int addr = inet_addr(gateway);
+
+		if (addr != INADDR_NONE) {
+			ret = lkl_set_ipv4_gateway(addr);
+			if (ret< 0)
+				fprintf(stderr, "failed to set IPv4 gateway: %s\n",
+					lkl_strerror(ret));
+		}
+	}
 }
 
 static void __attribute__((destructor)) fini(void)
