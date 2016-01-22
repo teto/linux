@@ -625,11 +625,13 @@ static void timekeeping_forward_now(struct timekeeper *tk)
  */
 int __getnstimeofday64(struct timespec64 *ts)
 {
+	/* defined in ROOT/linux/include/timekeeper_internal.h */
 	struct timekeeper *tk = &tk_core.timekeeper;
 	unsigned long seq;
 	s64 nsecs = 0;
 
 	do {
+		/* protect against concurrent access */
 		seq = read_seqcount_begin(&tk_core.seq);
 
 		ts->tv_sec = tk->xtime_sec;
@@ -638,6 +640,7 @@ int __getnstimeofday64(struct timespec64 *ts)
 	} while (read_seqcount_retry(&tk_core.seq, seq));
 
 	ts->tv_nsec = 0;
+	/* simple function that does what the name implies */
 	timespec64_add_ns(ts, nsecs);
 
 	/*
@@ -959,14 +962,17 @@ int timekeeping_inject_offset(struct timespec *ts)
 	struct timespec64 ts64, tmp;
 	int ret = 0;
 
+	/* if trying to set more than 1 sec */
 	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
 		return -EINVAL;
 
+	/* simple convert I imagine */
 	ts64 = timespec_to_timespec64(*ts);
 
 	raw_spin_lock_irqsave(&timekeeper_lock, flags);
 	write_seqcount_begin(&tk_core.seq);
 
+	/* */
 	timekeeping_forward_now(tk);
 
 	/* Make sure the proposed value is valid */
