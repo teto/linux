@@ -41,9 +41,21 @@ export CFLAGS += -I$(OUTPUT)/include -Iinclude -Wall -g -O2 -Wextra \
 	 -Wno-missing-field-initializers -fno-strict-aliasing
 LDFLAGS += -pie
 
+
+# chooses host to link
+# OUTPUT_FORMAT = $(shell $(LD) -r -print-output-format)
 OUTPUT_FORMAT = $(shell $(LD) -r -print-output-format)
 
-ifneq (,$(filter $(OUTPUT_FORMAT),elf64-x86-64 elf32-i386 elf64-x86-64-freebsd elf32-littlearm elf64-littleaarch64))
+ifeq (1,1)
+  OUTPUT_DEF = $(shell echo | $(CC) -dM -E -)
+  CFLAGS   += -fPIC -pthread
+  export CONFIG_AUTO_LKL_NS3_HOST=y
+  CFLAGS += -DCONFIG_AUTO_LKL_NS3_HOST=y
+  # CFLAGS += -DCONFIG_AUTO_LKL_NS3_HOST=y
+  # DCE maybe I don't need to link
+  # LDLIBS     += $(shell pkg-config --libs ns3)
+
+else ifneq (,$(filter $(OUTPUT_FORMAT),elf64-x86-64 elf32-i386 elf64-x86-64-freebsd elf32-littlearm elf64-littleaarch64))
   OUTPUT_DEF = $(shell echo | $(CC) -dM -E -)
   CFLAGS   += -fPIC -pthread
   ifeq (,$(filter $(OUTPUT_DEF),__ANDROID__))
