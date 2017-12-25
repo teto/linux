@@ -10,7 +10,7 @@
 
 #include <model/dce-stdio.h>
 #include <model/dce-stdlib.h> /* for dce_malloc/free */
-#include <model/dce-pthread.h> /*   */
+#include <model/dce-pthread.h> /* for pthread */
 
 /* for now rely on mutex since dce has everything available
  * _POSIX_SEMAPHORES */
@@ -24,6 +24,7 @@ struct lkl_sem {
 #endif /* _POSIX_SEMAPHORES */
 };
 
+/* lkl_thread_t */
 struct lkl_tls_key {
 	pthread_key_t key;
 };
@@ -31,6 +32,11 @@ struct lkl_tls_key {
 struct lkl_mutex {
 	pthread_mutex_t mutex;
 };
+
+#define WARN_UNLESS(exp) do {						\
+		if (exp < 0)						\
+			lkl_printf("%s: %s\n", #exp, strerror(errno));	\
+	} while (0)
 
 /* struct SimTask { */
 /* 	struct task_struct kernel_task; */
@@ -109,34 +115,50 @@ static void sem_down(struct lkl_sem *sem)
 #endif /* _POSIX_SEMAPHORES */
 }
 
-
-/* static struct lkl_mutex* mutex_alloc(int recursive) */
-/* { */
-/* 	// NOP */
-/* 	return NULL; */
-/* } */
-
-/* static void mutex_free(struct lkl_mutex *mutex) */
-/* { */
-/* 	// NOP */
-/* } */
-
-/* static void mutex_lock(struct lkl_mutex *mutex) */
-/* { */
-/* 	// NOP */
-/* } */
-
-/* static void mutex_unlock(struct lkl_mutex *mutex) */
-/* { */
-/* 	// NOP */
-/* } */
-
-static lkl_thread_t thread_create(void (*f)(void *), void *arg)
+static struct lkl_mutex *mutex_alloc(int recursive)
 {
-	// NOP
-	struct SimTask task;
-	
-	return (lkl_thread_t) 0;
+	struct lkl_mutex *_mutex = malloc(sizeof(struct lkl_mutex));
+	pthread_mutex_t *mutex = NULL;
+	pthread_mutexattr_t attr;
+
+	if (!_mutex)
+		return NULL;
+
+	mutex = &_mutex->mutex;
+	WARN_PTHREAD(pthread_mutexattr_init(&attr));
+
+	/* PTHREAD_MUTEX_ERRORCHECK is *very* useful for debugging,
+	 * but has some overhead, so we provide an option to turn it
+	 * off. */
+#ifdef DEBUG
+	if (!recursive)
+		WARN_PTHREAD(pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK));
+#endif /* DEBUG */
+
+	if (recursive)
+		WARN_PTHREAD(pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE));
+
+	WARN_PTHREAD(pthread_mutex_init(mutex, &attr));
+
+	return _mutex;
+}
+
+static void mutex_lock(struct lkl_mutex *mutex)
+{
+	WARN_PTHREAD(pthread_mutex_lock(&mutex->mutex));
+}
+
+static void mutex_unlock(struct lkl_mutex *_mutex)
+{
+	pthread_mutex_t *mutex = &_mutex->mutex;
+	WARN_PTHREAD(pthread_mutex_unlock(mutex));
+}
+
+static void mutex_free(struct lkl_mutex *_mutex)
+{
+	pthread_mutex_t *mutex = &_mutex->mutex;
+	WARN_PTHREAD(pthread_mutex_destroy(mutex));
+	free(_mutex);
 }
 
 static void thread_detach(void)
@@ -150,11 +172,6 @@ static void thread_exit(void)
 }
 
 static int thread_join(lkl_thread_t tid)
-{
-	// NOP
-}
-
-static lkl_thread_t thread_self(void)
 {
 	// NOP
 }
@@ -236,15 +253,15 @@ static long gettid(void)
 	// NOP
 }
 
-static void jmp_buf_set(struct lkl_jmp_buf *jmpb, void (*f)(void))
-{
-	// NOP
-}
+/* static void jmp_buf_set(struct lkl_jmp_buf *jmpb, void (*f)(void)) */
+/* { */
+/* 	// NOP */
+/* } */
 
-static void jmp_buf_longjmp(struct lkl_jmp_buf *jmpb, int val)
-{
-	// NOP
-}
+/* static void jmp_buf_longjmp(struct lkl_jmp_buf *jmpb, int val) */
+/* { */
+/* 	// NOP */
+/* } */
 
 /* look at posix host for some understanding */
 struct lkl_host_operations lkl_host_ops = {
@@ -252,22 +269,22 @@ struct lkl_host_operations lkl_host_ops = {
 	/* for now a paste of dce_abort */
 	.panic = dce_panic,
 
-	.thread_create = dce_thread_create,
-	.thread_detach = dce_thread_detach,
+	.thread_create = dce_pthread_create,
+	.thread_detach = dce_pthread_detach,
 	.thread_exit = dce_pthread_exit,
 	.thread_join = dce_pthread_join,
 	.thread_self = dce_pthread_self,
 	.thread_equal = dce_pthread_equal,
 
 	.sem_alloc = sem_alloc,
-	.sem_free = dce_sem_free,
+	.sem_free = sem_free,
 	.sem_up = sem_up,
 	.sem_down = sem_down,
 
-	.mutex_alloc = dce_mutex_alloc,
-	.mutex_free = dce_mutex_free,
-	.mutex_lock = dce_mutex_lock,
-	.mutex_unlock = dce_mutex_unlock,
+	.mutex_alloc = dce_pthread_mutex_init,
+	.mutex_free = mutex_free,
+	.mutex_lock = mutex_lock,
+	.mutex_unlock = mutex_unlock,
 
 	.tls_alloc = tls_alloc,
 	.tls_free = tls_free,
