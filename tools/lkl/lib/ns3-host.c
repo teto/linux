@@ -293,5 +293,5 @@ struct lkl_host_operations lkl_host_ops = {
 	/* pthread_fiber_manager does some things
 	 * maybe try to reestablish the single codepath */
 	.jmp_buf_set = 0,
-	.jmp_buf_longjmp = jmp_buf_longjmp,
+	.jmp_buf_longjmp = 0,  /* jmp_buf_longjmp */
 };
