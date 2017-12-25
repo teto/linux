@@ -7,10 +7,10 @@
 #include <lkl_host.h>
 #include <linux/sched.h>
 #include <linux/wait.h>
-#include <linux/list.h>
 
 #include <model/dce-stdio.h>
-#include <model/dce-pthread.h>
+#include <model/dce-stdlib.h> /* for dce_malloc/free */
+#include <model/dce-pthread.h> /*   */
 
 /* for now rely on mutex since dce has everything available
  * _POSIX_SEMAPHORES */
@@ -254,10 +254,10 @@ struct lkl_host_operations lkl_host_ops = {
 
 	.thread_create = dce_thread_create,
 	.thread_detach = dce_thread_detach,
-	.thread_exit = dce_thread_exit,
-	.thread_join = dce_thread_join,
-	.thread_self = dce_thread_self,
-	.thread_equal = dce_thread_equal,
+	.thread_exit = dce_pthread_exit,
+	.thread_join = dce_pthread_join,
+	.thread_self = dce_pthread_self,
+	.thread_equal = dce_pthread_equal,
 
 	.sem_alloc = sem_alloc,
 	.sem_free = dce_sem_free,

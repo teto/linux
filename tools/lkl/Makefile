@@ -49,8 +49,12 @@ OUTPUT_FORMAT = $(shell $(LD) -r -print-output-format)
 ifeq (1,1)
   OUTPUT_DEF = $(shell echo | $(CC) -dM -E -)
   CFLAGS   += -fPIC -pthread
+  # TODO pass it through builder instead !
+  CFLAGS   += -I/home/teto/dce
   export CONFIG_AUTO_LKL_NS3_HOST=y
-  CFLAGS += -DCONFIG_AUTO_LKL_NS3_HOST=y
+  CFLAGS += -DCONFIG_AUTO_LKL_NS3_HOST
+  # export CONFIG_AUTO_LKL_POSIX_HOST=y
+  # CFLAGS += -DCONFIG_AUTO_LKL_POSIX_HOST
   # CFLAGS += -DCONFIG_AUTO_LKL_NS3_HOST=y
   # DCE maybe I don't need to link
   # LDLIBS     += $(shell pkg-config --libs ns3)

@@ -52,17 +52,17 @@ extern struct SimImported *g_imported;
 extern struct SimKernel *g_kernel;
 /* extern struct lkl_host_operations lkl_host_ops; */
 
-void sim_init(struct SimExported *exported, const struct SimImported *imported,
-		struct SimKernel *kernel)
-{
-	char command_line[COMMAND_LINE_SIZE] = {0};
-	g_imported = imported;
-	g_kernel = kernel;
+/* void sim_init(struct SimExported *exported, const struct SimImported *imported, */
+/* 		struct SimKernel *kernel) */
+/* { */
+/* 	char command_line[COMMAND_LINE_SIZE] = {0}; */
+/* 	g_imported = imported; */
+/* 	g_kernel = kernel; */
 
-//	exported->task_get_private = lkl_task_get_private;
+/* //	exported->task_get_private = lkl_task_get_private; */
 
-	lkl_start_kernel(&lkl_host_ops, command_line);
-}
+/* 	lkl_start_kernel(&lkl_host_ops, command_line); */
+/* } */
 
 int __init lkl_start_kernel(struct lkl_host_operations *ops,
 			const char *fmt, ...)
