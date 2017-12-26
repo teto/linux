@@ -1,3 +1,5 @@
+/* Heavily inspired by posix-host.c with some calls
+ * prefixed with `dce_` */
 #include <stdlib.h>
 #include <signal.h>
 #include <assert.h>
@@ -8,12 +10,25 @@
 #include <linux/sched.h>
 #include <linux/wait.h>
 
+
+// for dce-signal.h
+typedef void (*sighandler_t)(int);
+
+// todo rename folder to include
 #include <model/dce-stdio.h>
 #include <model/dce-stdlib.h> /* for dce_malloc/free */
 #include <model/dce-pthread.h> /* for pthread */
+#include <model/dce-signal.h> /* for panic */
+#include <model/dce-time.h> /* for panic */
+
 
 /* for now rely on mutex since dce has everything available
- * _POSIX_SEMAPHORES */
+ * _POSIX_SEMAPHORES
+ * we could even move some of the sem
+ * 
+ * */
+#undef _POSIX_SEMAPHORES
+
 struct lkl_sem {
 #ifdef _POSIX_SEMAPHORES
 	sem_t sem;
@@ -24,7 +39,9 @@ struct lkl_sem {
 #endif /* _POSIX_SEMAPHORES */
 };
 
-/* lkl_thread_t */
+/* lkl_thread_t
+ * typedef unsigned long lkl_thread_t;
+ * */
 struct lkl_tls_key {
 	pthread_key_t key;
 };
@@ -45,9 +62,67 @@ struct lkl_mutex {
 
 /* extern struct SimTask *sim_task_create(void *private, unsigned long pid); */
 
+static int _warn_pthread(int ret, char *str_exp)
+{
+	if (ret > 0)
+		lkl_printf("%s: %s\n", str_exp, strerror(ret));
+
+	return ret;
+}
+
 /* pthread_* functions use the reverse convention */
 #define WARN_PTHREAD(exp) _warn_pthread(exp, #exp)
 
+static lkl_thread_t thread_create(void (*fn)(void *), void *arg)
+{
+	pthread_t thread;
+	if (WARN_PTHREAD(dce_pthread_create(&thread, NULL, (void* (*)(void *))fn, arg)))
+		return 0;
+	else
+		return (lkl_thread_t) thread;
+}
+
+static void thread_detach(void)
+{
+	WARN_PTHREAD(pthread_detach(pthread_self()));
+}
+
+static int thread_join(lkl_thread_t tid)
+{
+	if (WARN_PTHREAD(dce_pthread_join((pthread_t)tid, NULL)))
+		return -1;
+	else
+		return 0;
+}
+
+static void thread_exit(void)
+{
+	dce_pthread_exit(NULL);
+}
+
+static int thread_equal(lkl_thread_t a, lkl_thread_t b)
+{
+	return dce_pthread_equal(a, b);
+}
+
+
+/* in dce utils.cc and dce-time.cc through functions like 
+ * UtilsTimeToTimespec/
+ *
+ * g_timeBase can set the initial time
+ *  */
+static unsigned long long time_ns(void)
+{
+	struct timespec ts;
+
+	/* DCE ignores CLOCK_MONOTONIC */
+	dce_clock_gettime(CLOCK_MONOTONIC, &ts);
+
+	return 1e9*ts.tv_sec + ts.tv_nsec;
+}
+
+
+// TODO use host/node malloc
 static struct lkl_sem *sem_alloc(int count)
 {
 	struct lkl_sem *sem;
@@ -125,7 +200,7 @@ static struct lkl_mutex *mutex_alloc(int recursive)
 		return NULL;
 
 	mutex = &_mutex->mutex;
-	WARN_PTHREAD(pthread_mutexattr_init(&attr));
+	WARN_PTHREAD(dce_pthread_mutexattr_init(&attr));
 
 	/* PTHREAD_MUTEX_ERRORCHECK is *very* useful for debugging,
 	 * but has some overhead, so we provide an option to turn it
@@ -161,25 +236,6 @@ static void mutex_free(struct lkl_mutex *_mutex)
 	free(_mutex);
 }
 
-static void thread_detach(void)
-{
-	// NOP
-}
-
-static void thread_exit(void)
-{
-	// NOP
-}
-
-static int thread_join(lkl_thread_t tid)
-{
-	// NOP
-}
-
-static int thread_equal(lkl_thread_t a, lkl_thread_t b)
-{
-	// NOP
-}
 
 static struct lkl_tls_key* tls_alloc(void (*destructor)(void *))
 {
@@ -215,26 +271,44 @@ static void* tls_get(struct lkl_tls_key *key)
 //	// NOP
 //}
 
-static unsigned long long time(void)
+/* maybe we can do better with dce */
+static void *timer_alloc(void (*fn)(void *), void *arg)
 {
-	// NOP
-	return 0;
+	int err;
+	timer_t timer;
+	struct sigevent se =  {
+		.sigev_notify = SIGEV_THREAD,
+		.sigev_value = {
+			.sival_ptr = arg,
+		},
+		.sigev_notify_function = (void (*)(union sigval))fn,
+	};
+
+	err = dce_timer_create(CLOCK_REALTIME, &se, &timer);
+	if (err)
+		return NULL;
+
+	return (void *)(long)timer;
 }
 
-static void* timer_alloc(void (*fn)(void *), void *arg)
+static int timer_set_oneshot(void *_timer, unsigned long ns)
 {
-	// NOP
-	
+	timer_t timer = (timer_t)(long)_timer;
+	struct itimerspec ts = {
+		.it_value = {
+			.tv_sec = ns / 1000000000,
+			.tv_nsec = ns % 1000000000,
+		},
+	};
+
+	return timer_settime(timer, 0, &ts, NULL);
 }
 
-static int timer_set_oneshot(void *timer, unsigned long delta)
+static void timer_free(void *_timer)
 {
-	// NOP
-}
+	timer_t timer = (timer_t)(long)_timer;
 
-static void timer_free(void *timer)
-{
-	// NOP
+	timer_delete(timer);
 }
 
 static void* lkl_ioremap(long addr, int size)
@@ -250,7 +324,8 @@ static int lkl_iomem_access(const __volatile__ void *addr, void *val, int size,
 
 static long gettid(void)
 {
-	// NOP
+	// returns a pid_t,
+	return dce_gettid();
 }
 
 /* static void jmp_buf_set(struct lkl_jmp_buf *jmpb, void (*f)(void)) */
@@ -262,6 +337,10 @@ static long gettid(void)
 /* { */
 /* 	// NOP */
 /* } */
+static lkl_thread_t thread_self(void)
+{
+	return (lkl_thread_t)dce_pthread_self();
+}
 
 /* look at posix host for some understanding */
 struct lkl_host_operations lkl_host_ops = {
@@ -269,19 +348,22 @@ struct lkl_host_operations lkl_host_ops = {
 	/* for now a paste of dce_abort */
 	.panic = dce_panic,
 
-	.thread_create = dce_pthread_create,
-	.thread_detach = dce_pthread_detach,
-	.thread_exit = dce_pthread_exit,
-	.thread_join = dce_pthread_join,
-	.thread_self = dce_pthread_self,
-	.thread_equal = dce_pthread_equal,
+	/* most of these are available already in DCE
+	 * we just use wrappers to fix the return type */
+	.thread_create = thread_create,
+	.thread_detach = thread_detach,
+	.thread_exit = thread_exit,  /* returns void */
+	.thread_join = thread_join,
+	.thread_self = thread_self,
+	.thread_equal = thread_equal,
 
+	/* using posix version */
 	.sem_alloc = sem_alloc,
 	.sem_free = sem_free,
 	.sem_up = sem_up,
 	.sem_down = sem_down,
 
-	.mutex_alloc = dce_pthread_mutex_init,
+	.mutex_alloc = mutex_alloc,
 	.mutex_free = mutex_free,
 	.mutex_lock = mutex_lock,
 	.mutex_unlock = mutex_unlock,
@@ -291,7 +373,7 @@ struct lkl_host_operations lkl_host_ops = {
 	.tls_set = tls_set,
 	.tls_get = tls_get,
 
-	.time = time,
+	.time = time_ns,
 	.timer_alloc = timer_alloc,
 	.timer_set_oneshot = timer_set_oneshot,
 	.timer_free = timer_free,
