@@ -10,22 +10,19 @@
 #include <linux/sched.h>
 #include <linux/wait.h>
 
+/* inspired from net-next-sim/sim-init.h */
+struct SimExported {
+#include <lkl_exports.generated.h>
+};
 
 // for dce-signal.h
-typedef void (*sighandler_t)(int);
+/* typedef void (*sighandler_t)(int); */
 
-// todo rename folder to include
-#include <model/dce-stdio.h>
-#include <model/dce-stdlib.h> /* for dce_malloc/free */
-#include <model/dce-pthread.h> /* for pthread */
-#include <model/dce-signal.h> /* for panic */
-#include <model/dce-time.h> /* for panic */
-#include <model/dce-timerfd.h> /* for timerfr_XX */
 
 /* move it to ns3-host ? then we don't know lkl_start_kernel */
 /* SimImported alias for lkl_host_operations ? */
-extern struct SimImported *g_imported;
-extern struct SimKernel *g_kernel;
+/* extern struct SimImported *g_imported; */
+/* extern struct SimKernel *g_kernel; */
 /* extern struct lkl_host_operations lkl_host_ops; */
 
 // original definition is
@@ -41,7 +38,7 @@ struct SimDevice {
 /*
  * dad
  */
-struct SimExported {
+/* struct SimExported { */
 	/* struct SimTask *(*task_create)(void *priv, unsigned long pid); */
 	/* void (*task_destroy)(struct SimTask *task); */
 	/* void *(*task_get_private)(struct SimTask *task); */
@@ -81,36 +78,43 @@ struct SimExported {
 /* int lkl_netdev_add(struct lkl_netdev *nd, struct lkl_netdev_args* args); */
 /* lkl_netdev_pipe_create */
 /* lkl_netdev_raw_create */
-	struct SimDevice *(*dev_create)(const char *ifname, void *priv,
-					enum SimDevFlags flags);
-	void (*dev_destroy)(struct SimDevice *dev);
-	void *(*dev_get_private)(struct SimDevice *task);
-	void (*dev_set_address)(struct SimDevice *dev,
-				unsigned char buffer[6]);
-	void (*dev_set_mtu)(struct SimDevice *dev, int mtu);
-	struct SimDevicePacket (*dev_create_packet)(struct SimDevice *dev,
-						int size);
-	void (*dev_rx)(struct SimDevice *dev, struct SimDevicePacket packet);
+	/* struct SimDevice *(*dev_create)(const char *ifname, void *priv, */
+	/* 				enum SimDevFlags flags); */
+	/* void (*dev_destroy)(struct SimDevice *dev); */
+	/* void *(*dev_get_private)(struct SimDevice *task); */
+	/* void (*dev_set_address)(struct SimDevice *dev, */
+	/* 			unsigned char buffer[6]); */
+	/* void (*dev_set_mtu)(struct SimDevice *dev, int mtu); */
+	/* struct SimDevicePacket (*dev_create_packet)(struct SimDevice *dev, */
+	/* 					int size); */
+	/* void (*dev_rx)(struct SimDevice *dev, struct SimDevicePacket packet); */
 
-	void (*sys_iterate_files)(const struct SimSysIterator *iter);
-	int (*sys_file_read)(const struct SimSysFile *file, char *buffer,
-			int size, int offset);
-	int (*sys_file_write)(const struct SimSysFile *file,
-			const char *buffer, int size, int offset);
-}
+	/* void (*sys_iterate_files)(const struct SimSysIterator *iter); */
+	/* int (*sys_file_read)(const struct SimSysFile *file, char *buffer, */
+	/* 		int size, int offset); */
+	/* int (*sys_file_write)(const struct SimSysFile *file, */
+	/* 		const char *buffer, int size, int offset); */
+/* } */
+
+
+/* inspired by net-next-sim lib_init */
 void sim_init(
-	struct SimExported *exported, const struct SimImported *imported_host_ops,
+	struct SimExported *exported, struct lkl_host_operations *imported_host_ops,
 	/* struct SimKernel *kernel // */
 	const char* fmt, ...
 )
 {
-	char command_line[COMMAND_LINE_SIZE] = {0};
-	g_imported = imported;
-	g_kernel = kernel;
+	/* char command_line[COMMAND_LINE_SIZE] = {0}; */
+	/* g_imported = imported_host_ops; */
+	/* g_kernel = kernel; */
+
+	/* here we assign symbols */
+	#include "exports.generated.c"
 
 //	exported->task_get_private = lkl_task_get_private;
 
 	// or call the start function from DCE ?
+	// for now empty cmdline
 	lkl_start_kernel(
 			imported_host_ops,
 			""
@@ -121,7 +125,6 @@ void sim_init(
 /* for now rely on mutex since dce has everything available
  * _POSIX_SEMAPHORES
  * we could even move some of the sem
- * 
  * */
 #undef _POSIX_SEMAPHORES
 
@@ -454,8 +457,10 @@ struct lkl_sem {
 /* } */
 
 
-/* /1* look at posix host for some understanding *1/ */
-/* struct lkl_host_operations lkl_host_ops = { */
+/* look at posix host for some understanding
+ * it will be set 
+ */
+struct lkl_host_operations lkl_host_ops = {
 /* 	.print = print, */
 /* 	/1* for now a paste of dce_abort *1/ */
 /* 	.panic = dce_panic, */
@@ -508,4 +513,91 @@ struct lkl_sem {
 /* 	 * maybe try to reestablish the single codepath *1/ */
 /* 	.jmp_buf_set = 0, */
 /* 	.jmp_buf_longjmp = 0,  /1* jmp_buf_longjmp *1/ */
+
+};
+
+
+static int fd_get_capacity(struct lkl_disk disk, unsigned long long *res)
+{
+	off_t off;
+
+	off = lseek(disk.fd, 0, SEEK_END);
+	if (off < 0)
+		return -1;
+
+	*res = off;
+	return 0;
+}
+
+static int do_rw(ssize_t (*fn)(), struct lkl_disk disk, struct lkl_blk_req *req)
+{
+	off_t off = req->sector * 512;
+	void *addr;
+	int len;
+	int i;
+	int ret = 0;
+
+	for (i = 0; i < req->count; i++) {
+
+		addr = req->buf[i].iov_base;
+		len = req->buf[i].iov_len;
+
+		do {
+			ret = fn(disk.fd, addr, len, off);
+
+			if (ret <= 0) {
+				ret = -1;
+				goto out;
+			}
+
+			addr += ret;
+			len -= ret;
+			off += ret;
+
+		} while (len);
+	}
+
+out:
+	return ret;
+}
+
+static int blk_request(struct lkl_disk disk, struct lkl_blk_req *req)
+{
+	int err = 0;
+
+	switch (req->type) {
+	case LKL_DEV_BLK_TYPE_READ:
+		err = do_rw(pread, disk, req);
+		break;
+	case LKL_DEV_BLK_TYPE_WRITE:
+		err = do_rw(pwrite, disk, req);
+		break;
+	case LKL_DEV_BLK_TYPE_FLUSH:
+	case LKL_DEV_BLK_TYPE_FLUSH_OUT:
+#ifdef __linux__
+		err = fdatasync(disk.fd);
+#else
+		err = fsync(disk.fd);
+#endif
+		break;
+	default:
+		return LKL_DEV_BLK_STATUS_UNSUP;
+	}
+
+	if (err < 0)
+		return LKL_DEV_BLK_STATUS_IOERR;
+
+	return LKL_DEV_BLK_STATUS_OK;
+}
+
+struct lkl_dev_blk_ops lkl_dev_blk_ops = {
+	.get_capacity = fd_get_capacity,
+	.request = blk_request,
+};
+
+
+/* struct lkl_dev_blk_ops lkl_dev_blk_ops = { */
+/* 	.get_capacity = 0, */
+/* 	.request = 0, */
 /* }; */
+
