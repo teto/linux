@@ -9,11 +9,12 @@
 #include <lkl_host.h>
 #include <linux/sched.h>
 #include <linux/wait.h>
+#include <lkl_exports.h>
 
 /* inspired from net-next-sim/sim-init.h */
-struct SimExported {
-#include <lkl_exports.generated.h>
-};
+/* struct SimExported { */
+/* #include <lkl_exports.generated.h> */
+/* }; */
 
 // for dce-signal.h
 /* typedef void (*sighandler_t)(int); */

@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/nix/store/sxwh6a4v8xdlvg4jf3vl2jh9l5760hsc-bash-4.4-p12/bin/sh -e
 
 if ! [ -x ../lklfuse ]; then
     echo "lklfuse not available, skipping tests"

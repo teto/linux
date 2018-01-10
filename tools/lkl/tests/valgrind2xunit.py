@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/nix/store/pjxvh01jhjm9m62lwm5vbnn0ml5xd35s-python-2.7.14/bin/python
 
 ##
 ## Downloader from

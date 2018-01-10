@@ -1,4 +1,4 @@
-#!/bin/sh -ex
+#!/nix/store/sxwh6a4v8xdlvg4jf3vl2jh9l5760hsc-bash-4.4-p12/bin/sh -ex
 
 if [ -z "$origin_master" ]; then
     origin_master="origin/master"

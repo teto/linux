@@ -1,0 +1,10 @@
+int (*dce_lkl_add_gateway)(int af,void * gwaddr);
+int (*dce_lkl_add_neighbor)(int ifindex,int af,void * addr,void * mac);
+int (*dce_lkl_closedir)(struct lkl_dir * dir);
+int (*dce_lkl_dirfd)(struct lkl_dir * dir);
+int (*dce_lkl_disk_add)(struct lkl_disk * disk);
+int (*dce_lkl_disk_remove)(struct lkl_disk disk);
+int (*dce_lkl_encode_dev_from_sysfs)(const char * sysfs_path,uint32_t * pdevid);
+int (*dce_lkl_errdir)(struct lkl_dir * dir);
+lkl_dir * (*dce_lkl_fdopendir)(int fd,int * err);
+int (*dce_lkl_get_virtio_blkdev)(int disk_id,unsigned int part,uint32_t * pdevid);

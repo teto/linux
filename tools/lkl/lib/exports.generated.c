@@ -1,0 +1,10 @@
+exported->dce_lkl_add_gateway=lkl_add_gateway;
+exported->dce_lkl_add_neighbor=lkl_add_neighbor;
+exported->dce_lkl_closedir=lkl_closedir;
+exported->dce_lkl_dirfd=lkl_dirfd;
+exported->dce_lkl_disk_add=lkl_disk_add;
+exported->dce_lkl_disk_remove=lkl_disk_remove;
+exported->dce_lkl_encode_dev_from_sysfs=lkl_encode_dev_from_sysfs;
+exported->dce_lkl_errdir=lkl_errdir;
+exported->dce_lkl_fdopendir=lkl_fdopendir;
+exported->dce_lkl_get_virtio_blkdev=lkl_get_virtio_blkdev;
