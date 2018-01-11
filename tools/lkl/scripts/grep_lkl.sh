@@ -32,7 +32,7 @@ do
 	# I badly need the 
     echo "exported->dce_${name}=$name;" >> lib/exports.generated.c
     echo "${rtype} (*dce_${name})$signature;"  >> include/lkl_exports.generated.h
-done < <(head name_ret_params.csv)
+done < <(cat name_ret_params.csv)
 
 echo "head $PWD/lib/exports.generated.c"
 echo "head $PWD/include/lkl_exports.generated.h"
