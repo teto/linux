@@ -460,6 +460,7 @@ struct lkl_sem {
 
 /* look at posix host for some understanding
  * it will be set 
+ * the structure is set in DCE code
  */
 struct lkl_host_operations lkl_host_ops = {
 /* 	.print = print, */

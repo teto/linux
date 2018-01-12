@@ -44,7 +44,7 @@ int (*dce_lkl_set_fd_limit)(unsigned int fd_limit);
 int (*dce_lkl_set_ipv4_gateway)(unsigned int addr);
 int (*dce_lkl_set_ipv6_gateway)(void * addr);
 const char * (*dce_lkl_strerror)(int err);
-long long (*dce_lkl_sys_lseek)(unsigned int fd,__lkl__kernel_loff_t off,unsigned int whence);
+long long (*dce_lkl_sys_lseek)(unsigned int fd, __lkl__kernel_loff_t off,unsigned int whence);
 void * (*dce_lkl_sys_mmap)(void * addr,size_t length,int prot,int flags,int fd,off_t offset);
 int (*dce_lkl_sysctl)(const char * path,const char * value);
 void (*dce_lkl_sysctl_parse_write)(const char * sysctls);

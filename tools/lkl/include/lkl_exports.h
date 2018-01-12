@@ -5,6 +5,9 @@
 extern "C" {
 #endif
 
+/* #include <lkl/asm-generic/posix_types.h> */
+#include <lkl.h>
+
 struct SimExported {
 #include "lkl_exports.generated.h"
 };
