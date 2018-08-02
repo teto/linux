@@ -23,7 +23,7 @@ export srctree
 
 # OUTPUT fixup should be *after* include ../scripts/Makefile.include
 ifneq ($(OUTPUT),)
-  OUTPUT := $(OUTPUT)/tools/lkl/
+  OUTPUT := $(OUTPUT)tools/lkl/
 else
   OUTPUT := $(CURDIR)/
 endif

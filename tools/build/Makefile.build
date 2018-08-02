@@ -30,7 +30,7 @@ build-dir := $(srctree)/tools/build
 ifeq ($(OUTPUT),)
   fixdep := $(build-dir)/fixdep
 else
-  fixdep := $(OUTPUT)/fixdep
+  fixdep := $(OUTPUT)fixdep
 endif
 
 # Generic definitions
