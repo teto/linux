@@ -1077,8 +1077,9 @@ static void addr4_event_handler(const struct in_ifaddr *ifa, unsigned long event
 	struct mptcp_fm_ns *fm_ns = fm_get_ns(net);
 	struct mptcp_addr_event mpevent;
 
-	if (ifa->ifa_scope > RT_SCOPE_LINK ||
-	    ipv4_is_loopback(ifa->ifa_local))
+	if (ifa->ifa_scope > RT_SCOPE_LINK
+	    /* || ipv4_is_loopback(ifa->ifa_local) */
+		)
 		return;
 
 	spin_lock_bh(&fm_ns->local_lock);

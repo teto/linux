@@ -2026,16 +2026,16 @@ bool mptcp_doit(struct sock *sk)
 	const struct dst_entry *dst = __sk_dst_get(sk);
 
 	/* Don't do mptcp over loopback */
-	if (sk->sk_family == AF_INET &&
-	    (ipv4_is_loopback(inet_sk(sk)->inet_daddr) ||
-	     ipv4_is_loopback(inet_sk(sk)->inet_saddr)))
-		return false;
-#if IS_ENABLED(CONFIG_IPV6)
-	if (sk->sk_family == AF_INET6 &&
-	    (ipv6_addr_loopback(&sk->sk_v6_daddr) ||
-	     ipv6_addr_loopback(&inet6_sk(sk)->saddr)))
-		return false;
-#endif
+	/* if (sk->sk_family == AF_INET && */
+	/*     (ipv4_is_loopback(inet_sk(sk)->inet_daddr) || */
+	/*      ipv4_is_loopback(inet_sk(sk)->inet_saddr))) */
+	/* 	return false; */
+/* #if IS_ENABLED(CONFIG_IPV6) */
+	/* if (sk->sk_family == AF_INET6 && */
+	/*     (ipv6_addr_loopback(&sk->sk_v6_daddr) || */
+	/*      ipv6_addr_loopback(&inet6_sk(sk)->saddr))) */
+	/* 	return false; */
+/* #endif */
 	if (mptcp_v6_is_v4_mapped(sk) &&
 	    ipv4_is_loopback(inet_sk(sk)->inet_saddr))
 		return false;
