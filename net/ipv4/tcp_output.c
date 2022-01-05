@@ -651,7 +651,7 @@ static unsigned int tcp_syn_options(struct sock *sk, struct sk_buff *skb,
 	opts->mss = tcp_advertise_mss(sk);
 	remaining -= TCPOLEN_MSS_ALIGNED;
 
-	if (likely(sock_net(sk)->ipv4.sysctl_tcp_timestamps && !*md5)) {
+	if (likely(tcp_timestamps && !*md5)) {
 		opts->options |= OPTION_TS;
 		opts->tsval = tcp_skb_timestamp(skb) + tp->tsoffset;
 		opts->tsecr = tp->rx_opt.ts_recent;
@@ -670,11 +670,11 @@ static unsigned int tcp_syn_options(struct sock *sk, struct sk_buff *skb,
 				/* we hijack rcv_tstamp to save tsval so that we can XOR in the synsent answer 
 			 * look at retrans_stamp instead */
 
-			pr_info("%s: adding tsecr=%u to SYN", __func__, opts->tsecr);
+			pr_info("%s: tcp_timestamps=%d adding tsecr=%u to SYN", __func__, tcp_timestamps, opts->tsecr);
 
 		} else {
 			/* that's 0 */
-			pr_warn("%s tsecr is not null %u", __func__, opts->tsecr);
+			pr_warn("%s: disabling extended ts: tcp_timestamps=%d tsecr=%u", __func__, tcp_timestamps, opts->tsecr);
 		}
 
 		remaining -= TCPOLEN_TSTAMP_ALIGNED;
@@ -759,7 +759,7 @@ static unsigned int tcp_synack_options(const struct sock *sk,
 				net->ipv4.sysctl_tcp_timestamps,
 				ireq->tsext_precision);
 			mptcp_debug ("%s: extended ts, reusing syn tsval=%u, sending tsecr=%u (xoring option with syn.tsval %u)",
-					__func__, 
+					__func__,
 					req->ts_recent,
 					opts->tsecr,
 					req->ts_recent
@@ -826,7 +826,7 @@ static unsigned int tcp_established_options(struct sock *sk, struct sk_buff *skb
 		opts->tsval = skb ? tcp_skb_timestamp(skb) + tp->tsoffset : 0;
 
 		/* we don't care if ts_extended is enabled or not, we need to prevent too big a jump
-		 * between unlikely(tp->rx_opt.tstamp_extended) 
+		 * between unlikely(tp->rx_opt.tstamp_extended)
 		 */
 		if(sock_net(sk)->ipv4.sysctl_tcp_timestamps > 2) {
 			printk ("%s: a priori sending with precision %u", __func__, tp->tsext_precision);

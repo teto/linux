@@ -257,6 +257,7 @@ struct tcp_info {
 
 
 	/* additions at the end hoping it will break less stuff */
+	__u32	tcpi_snd_cwnd_clamp;  /* forward owd */
 	__u32	tcpi_fowd;  /* forward owd */
 	__u32	tcpi_bowd;  /* backward owd */
 };

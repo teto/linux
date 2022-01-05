@@ -3467,6 +3467,7 @@ void tcp_get_info(struct sock *sk, struct tcp_info *info, bool no_lock)
 	 * minmax_get(&tp->rtt_min);
 	 * Maybe I could even pass the cwd_limit
 	 */
+	info->tcpi_snd_cwnd_clamp = tp->snd_cwnd_clamp;
 	info->tcpi_fowd = minmax_get(&tp->owd_out.owd_min);
 	info->tcpi_bowd = minmax_get(&tp->owd_in.owd_min);
 
