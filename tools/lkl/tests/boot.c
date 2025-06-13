@@ -555,7 +555,7 @@ static int lkl_test_join(void)
 
 static const char *boot_log;
 
-#ifdef LKL_HOST_CONFIG_KASAN_TEST
+#ifdef LKL_CONFIG_KASAN_KUNIT_TEST
 
 #define KASAN_CMD_LINE "kunit.filter_glob=kasan* "
 
@@ -707,7 +707,7 @@ struct lkl_test tests[] = {
 	LKL_TEST(semaphore),
 	LKL_TEST(join),
 	LKL_TEST(start_kernel),
-#ifdef LKL_HOST_CONFIG_KASAN_TEST
+#ifdef LKL_CONFIG_KASAN_KUNIT_TEST
 	LKL_TEST(kasan),
 #endif
 	LKL_TEST(getpid),
