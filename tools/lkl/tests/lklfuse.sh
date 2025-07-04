@@ -8,7 +8,6 @@ cleanup()
 {
     set -e
 
-    sleep 1
     if type -P fusermount3 > /dev/null; then
         fusermount3 -u $dir
     else
