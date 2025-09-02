@@ -87,13 +87,15 @@ $(OUTPUT)lib/lkl.o: bin/stat $(DOT_CONFIG)
 	$(MAKE) -C ../.. ARCH=lkl $(KOPT)
 	$(MAKE) -C ../.. ARCH=lkl $(KOPT) install INSTALL_PATH=$(OUTPUT)
 
-# rules to link libs
+# rules to link hijack libs
 $(OUTPUT)%$(SOSUF): LDFLAGS += -shared
-$(OUTPUT)%$(SOSUF): $(OUTPUT)%-in.o $(OUTPUT)liblkl.a
+$(OUTPUT)%$(SOSUF): $(priv-libs-y:%=$(OUTPUT)%-in.o) $(OUTPUT)%-in.o $(OUTPUT)liblkl.a
 	$(QUIET_LINK)$(CC) $(LDFLAGS) $(LDFLAGS_$*-y) -o $@ $^ $(LDLIBS) $(LDLIBS_$*-y)
 
 # liblkl is special
-$(OUTPUT)liblkl$(SOSUF): $(OUTPUT)%-in.o $(OUTPUT)lib/lkl.o
+$(OUTPUT)lib/liblkl$(SOSUF): $(OUTPUT)lib/liblkl-in.o $(OUTPUT)lib/lkl.o
+	$(QUIET_LINK)$(CC) $(LDFLAGS) $(LDFLAGS_$*-y) -o $@ $^ $(LDLIBS) $(LDLIBS_$*-y)
+
 $(OUTPUT)liblkl.a: $(OUTPUT)lib/liblkl-in.o $(OUTPUT)lib/lkl.o
 	$(QUIET_AR)$(AR) -rc $@ $^
 
@@ -104,7 +106,6 @@ $(OUTPUT)%$(EXESUF): $(OUTPUT)%-in.o $(OUTPUT)liblkl.a
 # rule to build objects
 $(OUTPUT)%-in.o: $(OUTPUT)lib/lkl.o FORCE
 	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(patsubst %/,%,$(dir $*)) obj=$(notdir $*)
-
 
 $(OUTPUT)cpfromfs$(EXESUF): cptofs$(EXESUF)
 	$(Q)if ! [ -e $@ ]; then ln -s $< $@; fi

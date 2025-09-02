@@ -1,6 +1,7 @@
 libs-y += lib/liblkl
 
 ifneq ($(LKL_HOST_CONFIG_BSD),y)
+priv-libs-$(LKL_HOST_CONFIG_POSIX) += lib/hijack/libhijack-priv
 libs-$(LKL_HOST_CONFIG_POSIX) += lib/hijack/liblkl-hijack
 libs-$(LKL_HOST_CONFIG_POSIX) += lib/hijack/liblkl-zpoline
 endif
