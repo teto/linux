@@ -52,15 +52,9 @@ export CFLAGS += -I$(OUTPUT)/include -Iinclude -Wall -g -O2 -Wextra \
 
 include Targets
 
-# Expand targets to output location and suffix but preserve special
-# targets (e.g. .WAIT)
-# $1 - targets
-# $2 - suffix
-expand-targets = $(foreach t,$(1),$(if $(filter .%,$(t)),$(t),$(OUTPUT)$(t)$(2)))
-
-TARGETS := $(call expand-targets,$(progs-y),$(EXESUF))
-TARGETS += $(call expand-targets,$(tests-y),$(EXESUF))
-TARGETS += $(call expand-targets,$(libs-y),$(SOSUF))
+TARGETS := $(progs-y:%=$(OUTPUT)%$(EXESUF))
+TARGETS := $(tests-y:%=$(OUTPUT)%$(EXESUF))
+TARGETS += $(libs-y:%=$(OUTPUT)%$(SOSUF))
 all: $(TARGETS)
 
 # this workaround is for FreeBSD
@@ -102,6 +96,9 @@ $(OUTPUT)liblkl.a: $(OUTPUT)lib/liblkl-in.o $(OUTPUT)lib/lkl.o
 # rule to link programs
 $(OUTPUT)%$(EXESUF): $(OUTPUT)%-in.o $(OUTPUT)liblkl.a
 	$(QUIET_LINK)$(CC) $(LDFLAGS) $(LDFLAGS_$*-y) -o $@ $^ $(LDLIBS) $(LDLIBS_$*-y)
+
+# tests use a common private lib
+$(tests-y:%=$(OUTPUT)%$(EXESUF)): $(tests-priv-y:%=$(OUTPUT)%-in.o)
 
 # rule to build objects
 $(OUTPUT)%-in.o: $(OUTPUT)lib/lkl.o FORCE
@@ -182,7 +179,7 @@ libraries_install: $(libs-y:%=$(OUTPUT)%$(SOSUF)) $(OUTPUT)liblkl.a
 	    install -d $(DESTDIR)$(LIBDIR) ; \
 	    install -m 644 $^ $(DESTDIR)$(LIBDIR)
 
-programs_install: $(call expand-targets,$(progs-y),$(EXESUF))
+programs_install: $(progs-y:%=$(OUTPUT)%$(EXESUF))
 	$(call QUIET_INSTALL, programs) \
 	    install -d $(DESTDIR)$(BINDIR) ; \
 	    install -m 755 $^ $(DESTDIR)$(BINDIR)
@@ -198,4 +195,3 @@ FORCE: ;
 .PHONY: headers_install libraries_install programs_install install
 .NOTPARALLEL : lib/lkl.o
 .SECONDARY:
-.WAIT:
