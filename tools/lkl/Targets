@@ -1,6 +1,7 @@
 libs-y += lib/liblkl
 
 ifneq ($(LKL_HOST_CONFIG_BSD),y)
+priv-libs-$(LKL_HOST_CONFIG_POSIX) += lib/hijack/libhijack-priv
 libs-$(LKL_HOST_CONFIG_POSIX) += lib/hijack/liblkl-hijack
 libs-$(LKL_HOST_CONFIG_POSIX) += lib/hijack/liblkl-zpoline
 endif
@@ -26,11 +27,10 @@ LDLIBS_cptofs-y := -larchive
 LDLIBS_cptofs-$(LKL_HOST_CONFIG_NEEDS_LARGP) += -largp
 
 # tools/build/Makefile.build does not support parallel builds when
-# objects are shared between build objects so keep the test that uses
-# the most common object first and insert a build barrier to avoid
-# rebuilding common objects
+# objects are shared between build objects so use tests-common-in.o
+# as a tests build prerequisite which gets linked into each binary.
+tests-priv-y := tests/tests-common
 tests-y := tests/disk
-tests-y += .WAIT
 tests-y += tests/boot
 tests-y += tests/disk-vfio-pci
 tests-y += tests/net-test

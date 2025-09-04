@@ -1,6 +1,7 @@
-boot-y += boot.o test.o
-disk-y += disk.o cla.o test.o
-disk-vfio-pci-y += disk-vfio-pci.o cla.o test.o
-net-test-y += net-test.o cla.o test.o
-config-y += config.o test.o
-test-dlmopen-y += test-dlmopen.o test.o
+tests-common-y += cla.o test.o
+boot-y += boot.o
+disk-y += disk.o
+disk-vfio-pci-y += disk-vfio-pci.o
+net-test-y += net-test.o
+config-y += config.o
+test-dlmopen-y += test-dlmopen.o
