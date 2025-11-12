@@ -53,7 +53,7 @@ export CFLAGS += -I$(OUTPUT)/include -Iinclude -Wall -g -O2 -Wextra \
 include Targets
 
 TARGETS := $(progs-y:%=$(OUTPUT)%$(EXESUF))
-TARGETS := $(tests-y:%=$(OUTPUT)%$(EXESUF))
+TARGETS += $(tests-y:%=$(OUTPUT)%$(EXESUF))
 TARGETS += $(libs-y:%=$(OUTPUT)%$(SOSUF))
 all: $(TARGETS)
 
