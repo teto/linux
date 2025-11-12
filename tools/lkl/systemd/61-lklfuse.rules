@@ -1,4 +1,5 @@
-SUBSYSTEM!="block", SUBSYSTEMS!="usb", GOTO="lklfuse_end"
+SUBSYSTEM!="block", GOTO="lklfuse_end"
+ENV{ID_BUS}!="usb", GOTO="lklfuse_end"
 #TAG+="lklfuse-dbg-block-filter"
 # XXX remove should be handled by systemd service ConditionPathExists for %k
 # device node, but it doesn't appear to work, so manually stop.
