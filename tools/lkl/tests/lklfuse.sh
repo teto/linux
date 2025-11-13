@@ -98,7 +98,7 @@ if [ -z "$fstype" ]; then
     fstype="ext4"
 fi
 
-if ! [ -x $script_dir/../lklfuse ]; then
+if [ "$LKL_HOST_CONFIG_FUSE" != "y" ]; then
     lkl_test_plan 0 "lklfuse.sh $fstype"
     echo "lklfuse not available"
     exit 0

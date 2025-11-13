@@ -108,7 +108,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt update -y
-          sudo apt install -y ccache libjsmn-dev
+          sudo apt install -y ccache libjsmn-dev libfuse3-dev
       - name: Install clang toolchain
         if: runner.os == 'Linux'
         run: |
