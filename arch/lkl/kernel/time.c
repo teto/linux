@@ -14,7 +14,7 @@ void __ndelay(unsigned long nsecs)
 	unsigned long long start = lkl_ops->time();
 
 	while (lkl_ops->time() < start + nsecs)
-		;
+		cpu_relax();
 }
 
 void __udelay(unsigned long usecs)
